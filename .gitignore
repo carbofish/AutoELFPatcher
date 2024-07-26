@@ -1,2 +1,6 @@
 libs
 tmp
+*.tape
+*.so.6
+pwn
+.ssh

@@ -5,6 +5,12 @@ Retrieve libc list, download and decompress operation from [glibc-all in-one](ht
 
 To use this script, you need to install [patchelf](https://github.com/NixOS/patchelf)
 
+# Usage
+libc mode:
+![libc_mode](https://github.com/carbofish/AutoELFPatcher/raw/main/assets/patch.gif)
+
+elf mode:
+![libc_mode](https://github.com/carbofish/AutoELFPatcher/raw/main/assets/patch_elf.gif)
 
 ## AutoELFPatcher b1.0 - help
 
