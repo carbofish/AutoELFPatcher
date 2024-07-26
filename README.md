@@ -7,10 +7,10 @@ To use this script, you need to install [patchelf](https://github.com/NixOS/patc
 
 # Usage
 libc mode:
-![libc_mode](https://github.com/carbofish/AutoELFPatcher/raw/main/patch.gif)
+![libc_mode](https://github.com/carbofish/AutoELFPatcher/raw/main/assets/patch.gif)
 
 elf mode:
-![libc_mode](https://github.com/carbofish/AutoELFPatcher/raw/main/patch_elf.gif)
+![libc_mode](https://github.com/carbofish/AutoELFPatcher/raw/main/assets/patch_elf.gif)
 
 ## AutoELFPatcher b1.0 - help
 
