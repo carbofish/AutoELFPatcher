@@ -1,4 +1,5 @@
-#/usr/bin/python3
+#!/usr/bin/env python3
+
 from rich import console
 from rich.table import Table
 from rich.panel import Panel
@@ -8,6 +9,10 @@ import subprocess
 import shutil
 import sys
 
+script_path = os.path.dirname(os.path.abspath(__file__))
+
+tmp_dir = os.path.join(script_path, f"tmp/")
+libs_dir = os.path.join(script_path, f"libs/")
 
 def get_glibc_list():
     common_url = 'https://mirror.tuna.tsinghua.edu.cn/ubuntu/pool/main/g/glibc/'
@@ -162,9 +167,9 @@ def patch_libc(version: tuple, elf_path: str):
         elif "ld-linux" in lib_name or "ld" in lib_name: 
             # find ld
             ld_path = None
-            for p in os.listdir(f"./libs/{version[0]}/"):
+            for p in os.listdir(os.path.join(libs_dir, version[0])):
                 if "ld-" in p:
-                    ld_path = os.path.abspath(f"./libs/{version[0]}/{p}")
+                    ld_path = os.path.abspath(os.path.join(libs_dir, f"{version[0]}/{p}"))
                     break
             if ld_path == None:
                 assert("can't find ld.so")
@@ -172,9 +177,9 @@ def patch_libc(version: tuple, elf_path: str):
             run_system_command(f"patchelf --set-interpreter {ld_path} {abspath}", "./")
         elif lib_name == "libc.so.6":
             libc_path = None
-            for p in os.listdir(f"./libs/{version[0]}/"):
+            for p in os.listdir(os.path.join(libs_dir, version[0])):
                 if "libc-" in p or p == "libc.so.6":
-                    libc_path = os.path.abspath(f"./libs/{version[0]}/{p}")
+                    libc_path = os.path.abspath(os.path.join(libs_dir, f"{version[0]}/{p}"))
                     break
             if libc_path == None:
                 assert("can't find libc.so")
@@ -185,9 +190,9 @@ def patch_libc(version: tuple, elf_path: str):
             lib_name_without_so = lib_name.split(".so")[0]
             lib_name_without_so = lib_name_without_so.split("-")[0]
             lib_path = None
-            for p in os.listdir(f"./libs/{version[0]}/"):
+            for p in os.listdir(os.path.join(libs_dir, version[0])):
                 if lib_name_without_so in p:
-                    lib_path = os.path.abspath(f"./libs/{version[0]}/{p}")
+                    lib_path = os.path.abspath(os.path.join(libs_dir, f"{version[0]}/{p}"))
                     break
             if lib_path != None:
                 console.print(f"[green][+] [blue]patchelf [yellow][b]{original_lib} => {lib_path}")
@@ -197,7 +202,7 @@ def patch_libc(version: tuple, elf_path: str):
 
 def download_libc(version: tuple):
     
-    if os.path.exists(f"./libs/{version[0]}"):
+    if os.path.exists(os.path.join(libs_dir, version[0])):
         console.print(f"[yellow][+] [b]{version[0]} already exists. skip download")
         return
     
@@ -207,8 +212,8 @@ def download_libc(version: tuple):
         download_url = f'https://mirror.tuna.tsinghua.edu.cn/ubuntu/pool/main/g/glibc/libc6_{version[0]}.deb'
     
     # 删除 tmp 目录下所有文件
-    for filename in os.listdir("./tmp/"):
-        file_path = os.path.join("./tmp/", filename)
+    for filename in os.listdir(tmp_dir):
+        file_path = os.path.join(tmp_dir, filename)
         if os.path.isfile(file_path) or os.path.islink(file_path):
             os.unlink(file_path)  # 删除文件或符号链接
         elif os.path.isdir(file_path):
@@ -216,33 +221,33 @@ def download_libc(version: tuple):
     
     # 开始下载
     console.print(f"[green][+] downloading [red][b]{version[0]}")
-    with open(f"tmp/{version[0]}.deb", "wb") as f:
+    with open(os.path.join(tmp_dir, f"{version[0]}.deb"), "wb") as f:
         f.write(requests.get(download_url, stream=True).content)
         f.close()
     console.print(f"[green][+] finished")
     
     # 解压开始
-    run_system_command(f"ar xv {version[0]}.deb", "./tmp/")
+    run_system_command(f"ar xv {version[0]}.deb", tmp_dir)
     
     if os.path.exists(f"data.tar.zst"):
-        run_system_command("tar -I zstd -xf data.tar.*", "./tmp/")
+        run_system_command("tar -I zstd -xf data.tar.*", tmp_dir)
     else:
-        run_system_command("tar xf data.tar.*", "./tmp/")
+        run_system_command("tar xf data.tar.*", tmp_dir)
     console.print(f"[green][+] [red][b]{version[0]}.deb [green]extracted.")
     
-    if os.path.exists(f"./tmp/lib/"):
-        copy_directory_contents(f'./tmp/lib/{os.listdir("./tmp/lib/")[0]}', f"./libs/{version[0]}")
-    elif os.path.exists(f"./tmp/usr/lib/"):
-        copy_directory_contents(f'./tmp/usr/lib/{os.listdir("./tmp/usr/lib/")[0]}', f"./libs/{version[0]}")
+    if os.path.exists(os.path.join(tmp_dir, "lib/")):
+        copy_directory_contents(os.path.join(tmp_dir, f'lib/{os.listdir(os.path.join(tmp_dir, "lib/"))[0]}'), os.path.join(libs_dir, version[0]))
+    elif os.path.exists(os.path.join(tmp_dir, "usr/lib/")):
+        copy_directory_contents(os.path.join(tmp_dir, f'usr/lib{os.listdir(os.path.join(tmp_dir, "usr/lib/"))[0]}'), os.path.join(libs_dir, version[0]))
     else:
         assert("can't find extracted lib directory")
     
     
 def init():
-    if not os.path.exists("libs"):
-        os.makedirs("libs")
-    if not os.path.exists("tmp"):
-        os.makedirs("tmp")
+    if not os.path.exists(libs_dir):
+        os.makedirs(libs_dir)
+    if not os.path.exists(tmp_dir):
+        os.makedirs(tmp_dir)
 
 def main(libc_path, elf_path, mode):
     init()
